@@ -17,7 +17,7 @@
 
 #define SKETCH_NAME "Battery Sensor"
 #define SKETCH_MAJOR_VER "0"
-#define SKETCH_MINOR_VER "3"
+#define SKETCH_MINOR_VER "4"
 #define BATTERY_SENSOR 0
 
 // unsigned long SLEEP_TIME = 24*60*60*1000; // h*min*sec*1000
