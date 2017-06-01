@@ -2,39 +2,38 @@
  *  Battery-powered MySensors-2.x sensor
  */
 #include <Arduino.h>
+#include <SPI.h>
+#include <Vcc.h>
 
-#define MY_DEBUG
+// #define MY_DEBUG
 #define MY_RADIO_NRF24
 #define MY_BAUD_RATE 9600
-// #define MY_DEFAULT_ERR_LED_PIN
-// #define MY_LEDS_BLINKING_FEATURE
-// #define MY_DEFAULT_LED_BLINK_PERIOD 300
-
 #include <MySensors.h>
-#include <SPI.h>
 
 #define DEBUG
 
 #define SKETCH_NAME "Battery Sensor"
 #define SKETCH_MAJOR_VER "0"
-#define SKETCH_MINOR_VER "3"
+#define SKETCH_MINOR_VER "4"
 #define BATTERY_SENSOR 0
 
 // unsigned long SLEEP_TIME = 24*60*60*1000; // h*min*sec*1000
-unsigned long SLEEP_TIME = 60*1000L; // 60s
+unsigned long SLEEP_TIME = 60 * 1000L; // 60s = 1min
 int unusedPins[] = {2, 3, 4, 5, 6, 7, 8};
 
-// Globals
-int oldBatLevel;
+const float VccMin   = 1.8;           // Minimum expected Vcc level, in Volts.
+const float VccMax   = 3.3;           // Maximum expected Vcc level, in Volts.
+const float VccCorrection = 3.23/3.26;      // Measured Vcc by multimeter divided by reported Vcc
 
+Vcc vcc(VccCorrection);
+
+// Globals
+float oldBatPercentage;
 // MySensors messages
 MyMessage vMsg(BATTERY_SENSOR, V_VOLTAGE);
 
-int getBatteryLevel(long vcc);
-long readVcc();
-
 /*
- * MySensors 2,0 presentation
+ * MySensors 2.x presentation
  */
 void presentation() {
 #ifdef DEBUG
@@ -52,13 +51,13 @@ void setup()
 #ifdef DEBUG
   Serial.println("setup");
 #endif
-  // Reset pins
+  // Reset unused pins
   int count = sizeof(unusedPins)/sizeof(int);
   for (int i = 0; i < count; i++) {
     pinMode(unusedPins[i], INPUT);
     digitalWrite(unusedPins[i], LOW);
   }
-  oldBatLevel = -1;
+  oldBatPercentage = -1;
 }
 
 /*
@@ -69,63 +68,27 @@ void sendValues()
 #ifdef DEBUG
   Serial.println("sendValues");
 #endif
-
   // Send sensor values
   // ...
 
-  // Send battery level
-  long vcc = readVcc();
-  float v = vcc / 1000.0;
-  send(vMsg.set(v, 3));
-  // get percentage
-  int batLevel = getBatteryLevel(vcc);
-  if (oldBatLevel != batLevel) {
-    sendBatteryLevel(batLevel);
-    oldBatLevel = batLevel;
-  }
-}
-
-/*
- * Battery measure
- */
-int getBatteryLevel(long vcc) {
-  int results = (vcc - 2000)  / 10;
-  if (results > 100)
-    results = 100;
-  if (results < 0)
-    results = 0;
-  return results;
-}
-
-// when ADC completed, take an interrupt
-EMPTY_INTERRUPT (ADC_vect);
-
-/*
- * Tricky function to read value of the VCC
- */
-long readVcc() {
-  long result;
-  // Read 1.1V reference against AVcc
-  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-  delay(2); // Wait for Vref to settle
-  noInterrupts();
-  // start the conversion
-  ADCSRA |= _BV(ADSC) | _BV(ADIE);
-  set_sleep_mode(SLEEP_MODE_ADC); // sleep during sample
-  interrupts();
-  sleep_mode();
-  // reading should be done, but better make sure
-  // maybe the timer interrupt fired
-  while(bit_is_set(ADCSRA,ADSC));
-  result = ADCL;
-  result |= ADCH<<8;
-  result = 1126400L / result; // Back-calculate AVcc in mV
+  // Battery voltage
+  float volts = vcc.Read_Volts();
 #ifdef DEBUG
-  Serial.print("Battery voltage is: ");
-  Serial.print(result);
-  Serial.println(" mV");
+  Serial.print("VCC (volts) = ");
+  Serial.println(volts);
 #endif
-  return result;
+  send(vMsg.set(volts, 3));
+
+  // Battery percentage
+  float p = vcc.Read_Perc(VccMin, VccMax);
+  #ifdef DEBUG
+    Serial.print("VCC (percentage) = ");
+    Serial.println(p);
+  #endif
+  if (oldBatPercentage != p) {
+    sendBatteryLevel(p);
+    oldBatPercentage = p;
+  }
 }
 
 /*
@@ -135,11 +98,10 @@ void loop() {
 #ifdef DEBUG
   Serial.println("loop");
 #endif
-  if (oldBatLevel == -1) { // first start
+  if (oldBatPercentage == -1) { // first start
     // Send the values before sleeping
     sendValues();
   }
-  // Go to sleep
   sleep(SLEEP_TIME);
   // Read sensors and send on wakeup
   sendValues();
