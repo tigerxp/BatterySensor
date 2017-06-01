@@ -7,6 +7,7 @@
 #define MY_DEBUG
 #define MY_RADIO_NRF24
 #define MY_BAUD_RATE 9600
+
 #include <MySensors.h>
 
 #define DEBUG
@@ -20,9 +21,9 @@
 uint32_t SLEEP_TIME = 60 * 1000L; // 60s = 1min
 uint8_t unusedPins[] = {2, 3, 4, 5, 6, 7, 8};
 
-const float VccMin   = 1.8;           // Minimum expected Vcc level, in Volts.
-const float VccMax   = 3.3;           // Maximum expected Vcc level, in Volts.
-const float VccCorrection = 3.23/3.26;      // Measured Vcc by multimeter divided by reported Vcc
+const float VccMin = 1.8;           // Minimum expected Vcc level, in Volts.
+const float VccMax = 3.3;           // Maximum expected Vcc level, in Volts.
+const float VccCorrection = 3.23 / 3.26;      // Measured Vcc by multimeter divided by reported Vcc
 
 Vcc vcc(VccCorrection);
 
@@ -36,58 +37,56 @@ MyMessage vMsg(BATTERY_SENSOR, V_VOLTAGE);
  */
 void presentation() {
 #ifdef DEBUG
-  Serial.println("presentation");
+	Serial.println("presentation");
 #endif
-  sendSketchInfo(SKETCH_NAME, SKETCH_MAJOR_VER "." SKETCH_MINOR_VER);
-  present(BATTERY_SENSOR, S_MULTIMETER, "Battery Voltage");
+	sendSketchInfo(SKETCH_NAME, SKETCH_MAJOR_VER "." SKETCH_MINOR_VER);
+	present(BATTERY_SENSOR, S_MULTIMETER, "Battery Voltage");
 }
 
 /*
  * Setup
  */
-void setup()
-{
+void setup() {
 #ifdef DEBUG
-  Serial.println("setup");
+	Serial.println("setup");
 #endif
-  // Reset unused pins
-  int count = sizeof(unusedPins)/sizeof(int);
-  for (int i = 0; i < count; i++) {
-    pinMode(unusedPins[i], INPUT);
-    digitalWrite(unusedPins[i], LOW);
-  }
-  oldBatPercentage = -1;
+	// Reset unused pins
+	int count = sizeof(unusedPins) / sizeof(int);
+	for (int i = 0; i < count; i++) {
+		pinMode(unusedPins[i], INPUT);
+		digitalWrite(unusedPins[i], LOW);
+	}
+	oldBatPercentage = -1;
 }
 
 /*
  * Send sensor and battery values
  */
-void sendValues()
-{
+void sendValues() {
 #ifdef DEBUG
-  Serial.println("sendValues");
+	Serial.println("sendValues");
 #endif
-  // Send sensor values
-  // ...
+	// Send sensor values
+	// ...
 
-  // Battery voltage
-  float volts = vcc.Read_Volts();
+	// Battery voltage
+	float volts = vcc.Read_Volts();
 #ifdef DEBUG
-  Serial.print("VCC (volts) = ");
-  Serial.println(volts);
+	Serial.print("VCC (volts) = ");
+	Serial.println(volts);
 #endif
-  send(vMsg.set(volts, 3));
+	send(vMsg.set(volts, 3));
 
-  // Battery percentage
-  uint8_t p = (uint8_t)round(vcc.Read_Perc(VccMin, VccMax));
-  #ifdef DEBUG
-    Serial.print("VCC (percentage) = ");
-    Serial.println(p);
-  #endif
-  if (oldBatPercentage != p) {
-    sendBatteryLevel(p);
-    oldBatPercentage = p;
-  }
+	// Battery percentage
+	uint8_t p = (uint8_t) round(vcc.Read_Perc(VccMin, VccMax));
+#ifdef DEBUG
+	Serial.print("VCC (percentage) = ");
+	Serial.println(p);
+#endif
+	if (oldBatPercentage != p) {
+		sendBatteryLevel(p);
+		oldBatPercentage = p;
+	}
 }
 
 /*
@@ -95,13 +94,13 @@ void sendValues()
  */
 void loop() {
 #ifdef DEBUG
-  Serial.println("loop");
+	Serial.println("loop");
 #endif
-  if (oldBatPercentage == -1) { // first start
-    // Send the values before sleeping
-    sendValues();
-  }
-  sleep(SLEEP_TIME);
-  // Read sensors and send on wakeup
-  sendValues();
+	if (oldBatPercentage == -1) { // first start
+		// Send the values before sleeping
+		sendValues();
+	}
+	sleep(SLEEP_TIME);
+	// Read sensors and send on wakeup
+	sendValues();
 }
