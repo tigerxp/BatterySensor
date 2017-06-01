@@ -2,10 +2,9 @@
  *  Battery-powered MySensors-2.x sensor
  */
 #include <Arduino.h>
-#include <SPI.h>
 #include <Vcc.h>
 
-// #define MY_DEBUG
+#define MY_DEBUG
 #define MY_RADIO_NRF24
 #define MY_BAUD_RATE 9600
 #include <MySensors.h>
@@ -17,9 +16,9 @@
 #define SKETCH_MINOR_VER "4"
 #define BATTERY_SENSOR 0
 
-// unsigned long SLEEP_TIME = 24*60*60*1000; // h*min*sec*1000
-unsigned long SLEEP_TIME = 60 * 1000L; // 60s = 1min
-int unusedPins[] = {2, 3, 4, 5, 6, 7, 8};
+// unsigned uint32_t = 24*60*60*1000; // h*min*sec*1000
+uint32_t SLEEP_TIME = 60 * 1000L; // 60s = 1min
+uint8_t unusedPins[] = {2, 3, 4, 5, 6, 7, 8};
 
 const float VccMin   = 1.8;           // Minimum expected Vcc level, in Volts.
 const float VccMax   = 3.3;           // Maximum expected Vcc level, in Volts.
@@ -80,7 +79,7 @@ void sendValues()
   send(vMsg.set(volts, 3));
 
   // Battery percentage
-  float p = vcc.Read_Perc(VccMin, VccMax);
+  uint8_t p = (uint8_t)round(vcc.Read_Perc(VccMin, VccMax));
   #ifdef DEBUG
     Serial.print("VCC (percentage) = ");
     Serial.println(p);
