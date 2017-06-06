@@ -21,9 +21,9 @@
 uint32_t SLEEP_TIME = 60 * 1000L; // 60s = 1min
 uint8_t unusedPins[] = {2, 3, 4, 5, 6, 7, 8};
 
-const float VccMin = 1.8;           // Minimum expected Vcc level, in Volts.
-const float VccMax = 3.3;           // Maximum expected Vcc level, in Volts.
-const float VccCorrection = 3.23 / 3.26;      // Measured Vcc by multimeter divided by reported Vcc
+const float VccMin = 1.8; // Minimum expected Vcc level, in Volts.
+const float VccMax = 3.3; // Maximum expected Vcc level, in Volts.
+const float VccCorrection = 3.23 / 3.26; // Measured Vcc by multimeter divided by reported Vcc
 
 Vcc vcc(VccCorrection);
 
